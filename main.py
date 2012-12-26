@@ -18,10 +18,12 @@ import os
 from pprint import pformat
 
 import webapp2
+import jinja2
 from apiclient.discovery import build
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import OAuth2DecoratorFromClientSecrets
 
+SAMPLE_NAME = 'Instance timeout helper'
 GCE_PROJECT_ID = 'briandpe-api'
 
 decorator = OAuth2DecoratorFromClientSecrets(
@@ -29,16 +31,24 @@ decorator = OAuth2DecoratorFromClientSecrets(
     scope='https://www.googleapis.com/auth/compute',
 )
 compute = build('compute', 'v1beta13')
+jinja_environment = jinja2.Environment(
+    loader=jinja2.FileSystemLoader('templates'))
 
 
 class MainHandler(webapp2.RequestHandler):
     @decorator.oauth_required
     def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Hello world!')
-        list = compute.instances().list(project=GCE_PROJECT_ID)
-        instances = list.execute(decorator.http())
-        self.response.write(pformat(instances))
+        list_api = compute.instances().list(project=GCE_PROJECT_ID)
+        result = list_api.execute(decorator.http())
+        instances = result['items']
+
+        data = {}
+        data['title'] = SAMPLE_NAME
+        data['instances'] = instances
+        data['raw_instances'] = pformat(instances)
+
+        template = jinja_environment.get_template('index.html')
+        self.response.out.write(template.render(data))
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
