@@ -14,12 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+
 import webapp2
+from apiclient.discovery import build
+from oauth2client.appengine import OAuth2Decorator
+from oauth2client.appengine import OAuth2DecoratorFromClientSecrets
+
+decorator = OAuth2DecoratorFromClientSecrets(
+        os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
+        scope = 'https://www.googleapis.com/auth/compute',
+        )
 
 class MainHandler(webapp2.RequestHandler):
+    @decorator.oauth_required
     def get(self):
         self.response.write('Hello world!')
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', MainHandler),
+    (decorator.callback_path, decorator.callback_handler()),
 ], debug=True)
