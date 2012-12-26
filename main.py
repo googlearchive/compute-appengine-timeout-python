@@ -15,21 +15,30 @@
 # limitations under the License.
 #
 import os
+from pprint import pformat
 
 import webapp2
 from apiclient.discovery import build
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import OAuth2DecoratorFromClientSecrets
 
+GCE_PROJECT_ID = 'briandpe-api'
+
 decorator = OAuth2DecoratorFromClientSecrets(
-        os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
-        scope = 'https://www.googleapis.com/auth/compute',
-        )
+    os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
+    scope='https://www.googleapis.com/auth/compute',
+)
+compute = build('compute', 'v1beta13')
+
 
 class MainHandler(webapp2.RequestHandler):
     @decorator.oauth_required
     def get(self):
+        self.response.headers['Content-Type'] = 'text/plain'
         self.response.write('Hello world!')
+        list = compute.instances().list(project=GCE_PROJECT_ID)
+        instances = list.execute(decorator.http())
+        self.response.write(pformat(instances))
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
