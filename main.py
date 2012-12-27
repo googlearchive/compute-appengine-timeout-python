@@ -30,9 +30,8 @@ SAMPLE_NAME = 'Instance timeout helper'
 # with one of the SAFE_TAGS below.
 GCE_PROJECT_ID = 'briandpe-api'
 TIMEOUT = 60  # minutes
-SAFE_TAGS = "production safe".split()
-
-# In pretend mode, deletes are only. Set this to False after you've
+SAFE_TAGS = "production safetag".lower().split()
+# In pretend mode, deletes are only logged. Set this to False after you've
 # double-checked the status page and you're ready to enable the deletes.
 PRETEND_MODE = True
 
@@ -48,11 +47,12 @@ jinja_environment = jinja2.Environment(
 
 
 def annotate_instances(instances):
+    """loops through the instances and adds exclusion, age and timeout"""
     for instance in instances:
         # set _excluded
         excluded = False
         for tag in instance.get('tags', []):
-            if tag in SAFE_TAGS:
+            if tag.lower() in SAFE_TAGS:
                 excluded = True
                 break
         instance['_excluded'] = excluded
@@ -69,20 +69,22 @@ def annotate_instances(instances):
 
 
 def list_instances():
-        request = compute.instances().list(project=GCE_PROJECT_ID)
-        response = request.execute()
-        instances = response['items']
-        annotate_instances(instances)
-        return instances
+    """returns a list of dictionaries containing GCE instance data"""
+    request = compute.instances().list(project=GCE_PROJECT_ID)
+    response = request.execute()
+    instances = response.get('items', [])
+    annotate_instances(instances)
+    return instances
 
 
 class MainHandler(webapp2.RequestHandler):
+    """index handler, displays app configuration and instance data"""
     def get(self):
         instances = list_instances()
 
         config = {}
         config['PRETEND_MODE'] = PRETEND_MODE
-        config['SAFE_TAGS'] = SAFE_TAGS
+        config['SAFE_TAGS'] = ', '.join(SAFE_TAGS)
         config['TIMEOUT'] = TIMEOUT
         config['GCE_PROJECT_ID'] = GCE_PROJECT_ID
         data = {}
@@ -96,9 +98,10 @@ class MainHandler(webapp2.RequestHandler):
 
 
 def delete_expired_instances():
+    """logs all expired instances, calls delete API when not PRETEND_MODE"""
     instances = list_instances()
 
-    # filter instances, keep expired instances
+    # filter instances, keep only expired instances
     instances = [i for i in instances if i['_timeout_expired']]
 
     logging.info("delete cron: %s instance%s to delete",
@@ -117,6 +120,7 @@ def delete_expired_instances():
 
 
 class DeleteHandler(webapp2.RequestHandler):
+    """delete handler - HTTP endpoint for the GAE cron job"""
     def get(self):
         delete_expired_instances()
 
@@ -130,12 +134,13 @@ app = webapp2.WSGIApplication([
 # ------------------------------------------------
 # helpers
 def parse_iso8601tz(date_string):
-    """return a datetime object for strings in ISO 8601 format.
+    """return a datetime object for a string in ISO 8601 format.
 
-    This function only reliably parses strings in exactly this format:
+    This function parses strings in exactly this format:
     '2012-12-26T13:31:47.823-08:00'
 
-    sadly, datetime.strptime's %z format is unavailable on many platforms.
+    Sadly, datetime.strptime's %z format is unavailable on many platforms,
+    so we can't use a single strptime() call.
     """
 
     dt = datetime.datetime.strptime(date_string[:-6],
