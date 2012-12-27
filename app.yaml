@@ -9,6 +9,10 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+- url: /cron/delete
+  script: main.app
+  login: admin
+
 - url: .*
   script: main.app
 

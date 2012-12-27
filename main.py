@@ -16,6 +16,7 @@
 #
 import os
 import datetime
+import logging
 from pprint import pformat
 
 import jinja2
@@ -30,6 +31,10 @@ SAMPLE_NAME = 'Instance timeout helper'
 GCE_PROJECT_ID = 'briandpe-api'
 TIMEOUT = 60  # minutes
 SAFE_TAGS = "production safe".split()
+
+# In pretend mode, deletes are only. Set this to False after you've
+# double-checked the status page and you're ready to enable the deletes.
+PRETEND_MODE = True
 
 decorator = OAuth2DecoratorFromClientSecrets(
     os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
@@ -60,13 +65,18 @@ def annotate_instances(instances):
             instance['_timeout_expired'] = False
 
 
+def list_instances():
+        request = compute.instances().list(project=GCE_PROJECT_ID)
+        response = request.execute(http=decorator.http())
+        instances = response['items']
+        annotate_instances(instances)
+        return instances
+
+
 class MainHandler(webapp2.RequestHandler):
     @decorator.oauth_required
     def get(self):
-        list_api = compute.instances().list(project=GCE_PROJECT_ID)
-        result = list_api.execute(decorator.http())
-        instances = result['items']
-        annotate_instances(instances)
+        instances = list_instances()
 
         data = {}
         data['title'] = SAMPLE_NAME
@@ -76,8 +86,34 @@ class MainHandler(webapp2.RequestHandler):
         template = jinja_environment.get_template('index.html')
         self.response.out.write(template.render(data))
 
+
+def delete_expired_instances():
+    instances = list_instances()
+
+    # filter instances, keep expired instances
+    instances = [i for i in instances if i['_timeout_expired']]
+
+    for instance in instances:
+        name = instance['name']
+        if PRETEND_MODE:
+            logging.info("PRETEND DELETE: %s", name)
+        else:
+            logging.info("DELETE: %s", name)
+            request = compute.instances().delete(project=GCE_PROJECT_ID,
+                                                 instance=name)
+            response = request.execute(http=decorator.http())
+            logging.info(response)
+
+
+class DeleteHandler(webapp2.RequestHandler):
+    @decorator.oauth_required
+    def get(self):
+        delete_expired_instances()
+
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
+    ('/cron/delete', DeleteHandler),
     (decorator.callback_path, decorator.callback_handler()),
 ], debug=True)
 
