@@ -55,10 +55,11 @@ def annotate_instances(instances):
                 break
         instance['_excluded'] = excluded
 
-        # set _timeout_expired (never True for _excluded instances)
+        # set _age and _timeout_expired (never True for _excluded instances)
         creation = parse_iso8601tz(instance['creationTimestamp'])
         now = datetime.datetime.now()
         delta = now - creation
+        instance['_age'] = delta.seconds / 60
         if delta.seconds > TIMEOUT * 60 and not instance['_excluded']:
             instance['_timeout_expired'] = True
         else:
@@ -78,7 +79,13 @@ class MainHandler(webapp2.RequestHandler):
     def get(self):
         instances = list_instances()
 
+        config = {}
+        config['PRETEND_MODE'] = PRETEND_MODE
+        config['SAFE_TAGS'] = SAFE_TAGS
+        config['TIMEOUT'] = TIMEOUT
+        config['GCE_PROJECT_ID'] = GCE_PROJECT_ID
         data = {}
+        data['config'] = config
         data['title'] = SAMPLE_NAME
         data['instances'] = instances
         data['raw_instances'] = pformat(instances)

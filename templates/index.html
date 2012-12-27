@@ -19,10 +19,15 @@
         }
     </style>
     <body>
-        <h1>Instances:</h1>
+        <h2>Configuration:</h2>
+        {% for key, value in config.items() %}
+        <li>{{key}} : {{value}}
+        {% endfor %}
+        <h2>Instances:</h2>
         <table>
             <thead>
                 <td>Name</td>
+                <td>Age</td>
                 <td>Creation timestamp</td>
                 <td>Type</td>
                 <td>Excluded</td>
@@ -32,6 +37,7 @@
         {% for i in instances %}
         <tr {{'class="expired"' if i._timeout_expired}}>
                 <td>{{i.name}}</td>
+                <td>{{i._age}}</td>
                 <td>{{i.creationTimestamp}}</td>
                 <td>{{i.machineType.split('/')[-1]}}</td>
                 <td>{{i._excluded}}</td>
