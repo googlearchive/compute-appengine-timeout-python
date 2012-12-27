@@ -29,7 +29,7 @@ SAMPLE_NAME = 'Instance timeout helper'
 # Be careful, this application will delete instances unless they're tagged
 # with one of the SAFE_TAGS below.
 GCE_PROJECT_ID = 'briandpe-api'
-TIMEOUT = 60  # minutes
+TIMEOUT = 60 * 8  # in minutes, defaulting to 8 hours
 SAFE_TAGS = "production safetag".lower().split()
 # In pretend mode, deletes are only logged. Set this to False after you've
 # double-checked the status page and you're ready to enable the deletes.
