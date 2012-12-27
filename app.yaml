@@ -1,4 +1,4 @@
-application: compute-appengine-timeout-python
+application: REPLACE-WITH-YOUR-APP-ID
 version: 1
 runtime: python27
 api_version: 1
@@ -9,12 +9,9 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
-- url: /cron/delete
-  script: main.app
-  login: admin
-
 - url: .*
   script: main.app
+  login: admin
 
 libraries:
 - name: webapp2

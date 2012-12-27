@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os
 import datetime
+import httplib2
 import logging
 from pprint import pformat
 
 import jinja2
 import webapp2
 from apiclient.discovery import build
-from oauth2client.appengine import OAuth2Decorator
-from oauth2client.appengine import OAuth2DecoratorFromClientSecrets
+from google.appengine.api import memcache
+from oauth2client.appengine import AppAssertionCredentials
 
 SAMPLE_NAME = 'Instance timeout helper'
 # Be careful, this application will delete instances unless they're tagged
@@ -36,11 +36,13 @@ SAFE_TAGS = "production safe".split()
 # double-checked the status page and you're ready to enable the deletes.
 PRETEND_MODE = True
 
-decorator = OAuth2DecoratorFromClientSecrets(
-    os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
-    scope='https://www.googleapis.com/auth/compute',
-)
-compute = build('compute', 'v1beta13')
+# Obtain App Engine AppAssertion credentials and authorize HTTP connection.
+# https://developers.google.com/appengine/docs/python/appidentity/overview
+credentials = AppAssertionCredentials(
+    scope='https://www.googleapis.com/auth/compute')
+HTTP = credentials.authorize(httplib2.Http(memcache))
+
+compute = build('compute', 'v1beta13', http=HTTP)
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'))
 
@@ -68,14 +70,13 @@ def annotate_instances(instances):
 
 def list_instances():
         request = compute.instances().list(project=GCE_PROJECT_ID)
-        response = request.execute(http=decorator.http())
+        response = request.execute()
         instances = response['items']
         annotate_instances(instances)
         return instances
 
 
 class MainHandler(webapp2.RequestHandler):
-    @decorator.oauth_required
     def get(self):
         instances = list_instances()
 
@@ -100,6 +101,9 @@ def delete_expired_instances():
     # filter instances, keep expired instances
     instances = [i for i in instances if i['_timeout_expired']]
 
+    logging.info("delete cron: %s instance%s to delete",
+                 len(instances), '' if len(instances) == 1 else 's')
+
     for instance in instances:
         name = instance['name']
         if PRETEND_MODE:
@@ -108,12 +112,11 @@ def delete_expired_instances():
             logging.info("DELETE: %s", name)
             request = compute.instances().delete(project=GCE_PROJECT_ID,
                                                  instance=name)
-            response = request.execute(http=decorator.http())
+            response = request.execute()
             logging.info(response)
 
 
 class DeleteHandler(webapp2.RequestHandler):
-    @decorator.oauth_required
     def get(self):
         delete_expired_instances()
 
@@ -121,7 +124,6 @@ class DeleteHandler(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/cron/delete', DeleteHandler),
-    (decorator.callback_path, decorator.callback_handler()),
 ], debug=True)
 
 
