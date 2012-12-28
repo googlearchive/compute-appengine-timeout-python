@@ -3,7 +3,7 @@ Instance timeout helper
 
 This App Engine application monitors your Google Compute Engine instances and deletes any non-production instances once they're 8 hours old. This helps avoid accidentally running instances for a long time. Any instances tagged "production" will be left running.
 
-> WARNING: When instances are stopped, all data on ephemeral disks is destroyed. This application looks at ALL instances in a project and will delete any instances which aren't tagged "production". For extra safety, the application defaults to running in "pretend mode", where deletes are logged, but not applied. 
+> WARNING: When instances are stopped, all data on ephemeral disks is destroyed. This application looks at ALL instances in a project and will delete any instances which aren't tagged "production". For extra safety, the application defaults to running in DRY_RUN mode, where deletes are logged, but not applied. 
 
 This sample application demonstrates:
 
@@ -28,7 +28,7 @@ Clone the git repository for this project to your computer:
 
     $ git clone REPOSITORY-URL
 
-Install [Goolge API Python Client with dependencies for App Engine](http://code.google.com/p/google-api-python-client/downloads/list).
+Install [Google API Python Client with dependencies for App Engine](http://code.google.com/p/google-api-python-client/downloads/list).
 Visit the download page, find "Full Dependecies Build for Google App Engine Projects" and download it into the root of your repository, for example:
 
     $ wget http://google-api-python-client.googlecode.com/files/google-api-python-client-gae-1.0.zip
