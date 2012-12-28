@@ -65,7 +65,7 @@ Deploy the application to App Engine:
 
     $ appcfg.py update .
 
-> Note: This application will only run on App Engine, because it is using GAE app identity for authentication to GCE it will not work on the local development server.
+> Note: Because this application is using GAE app identity for authentication to GCE, it will not work on the local development server.
 
 View the index at the root of the application, at `http://YOUR-APP-ID.appspot.com`.
 Check that production instances are being excluded and older instances would be deleted. 
