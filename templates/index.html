@@ -21,9 +21,12 @@
     <body>
         <h1>{{title}}</h1>
         <h2>Configuration:</h2>
-        {% for key, value in config.items() %}
-        <li>{{key}} : {{value}}
-        {% endfor %}
+        <ul>
+            <li>DRY_RUN: {{config.DRY_RUN}}
+            <li>GCE_PROJECT_ID: {{config.GCE_PROJECT_ID}}
+            <li>SAFE_TAGS: {{', '.join(config.SAFE_TAGS)}}
+            <li>TIMEOUT: {{config.TIMEOUT}}
+        </ul>
         <h2>Instances:</h2>
         <table>
             <thead>
