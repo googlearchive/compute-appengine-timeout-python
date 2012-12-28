@@ -7,8 +7,8 @@ This App Engine application monitors your Google Compute Engine instances and de
 
 This sample application demonstrates:
 
- * Using Compute Engine API from App Engine, specifically: listing instances and deleting instances. The same pattern can be used for other GCE API calls.
- * App identity based API authorization from AppEngine - no shared secrets, no passwords, minimal configuration.
+ * Using the [Compute Engine API](https://developers.google.com/compute/docs/reference/v1beta13/) from App Engine, specifically: listing instances and deleting instances. The same pattern can be used for other GCE API calls.
+ * [App identity based API authorization](https://developers.google.com/appengine/docs/python/appidentity/overview) from AppEngine - no shared secrets, no passwords, minimal configuration.
 
 You can configure how often the application checks the instances, which tags will be left alone and how long instances are allowed to run before deleting them.
 
@@ -64,6 +64,8 @@ Verify
 Deploy the application to App Engine:
 
     $ appcfg.py update .
+
+> Note: This application will only run on App Engine, because it is using GAE app identity for authentication to GCE it will not work on the local development server.
 
 View the index at the root of the application, at `http://YOUR-APP-ID.appspot.com`.
 Check that production instances are being excluded and older instances would be deleted. 

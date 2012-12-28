@@ -42,6 +42,7 @@ credentials = AppAssertionCredentials(
 HTTP = credentials.authorize(httplib2.Http(memcache))
 
 # Build object for the 'v1beta13' version of the GCE API.
+# https://developers.google.com/compute/docs/reference/v1beta13/
 compute = build('compute', 'v1beta13', http=HTTP)
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'))
