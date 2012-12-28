@@ -28,12 +28,12 @@ from oauth2client.appengine import AppAssertionCredentials
 SAMPLE_NAME = 'Instance timeout helper'
 # Be careful, this application will delete instances unless they're tagged
 # with one of the SAFE_TAGS below.
-GCE_PROJECT_ID = 'briandpe-api'
+GCE_PROJECT_ID = 'replace-with-your-compute-engine-project-id'
 TIMEOUT = 60 * 8  # in minutes, defaulting to 8 hours
 SAFE_TAGS = "production safetag".lower().split()
 # In pretend mode, deletes are only logged. Set this to False after you've
 # double-checked the status page and you're ready to enable the deletes.
-PRETEND_MODE = True
+DRY_RUN = True
 
 # Obtain App Engine AppAssertion credentials and authorize HTTP connection.
 # https://developers.google.com/appengine/docs/python/appidentity/overview
@@ -41,6 +41,7 @@ credentials = AppAssertionCredentials(
     scope='https://www.googleapis.com/auth/compute')
 HTTP = credentials.authorize(httplib2.Http(memcache))
 
+# Build object for the 'v1beta13' version of the GCE API.
 compute = build('compute', 'v1beta13', http=HTTP)
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'))
@@ -57,11 +58,12 @@ def annotate_instances(instances):
                 break
         instance['_excluded'] = excluded
 
-        # set _age and _timeout_expired (never True for _excluded instances)
+        # set _age_hours and _timeout_expired
+        # _timeout_expired is never True for _excluded inst
         creation = parse_iso8601tz(instance['creationTimestamp'])
         now = datetime.datetime.now()
         delta = now - creation
-        instance['_age'] = delta.seconds / 60
+        instance['_age_hours'] = delta.seconds / 60
         if delta.seconds > TIMEOUT * 60 and not instance['_excluded']:
             instance['_timeout_expired'] = True
         else:
@@ -83,7 +85,7 @@ class MainHandler(webapp2.RequestHandler):
         instances = list_instances()
 
         config = {}
-        config['PRETEND_MODE'] = PRETEND_MODE
+        config['DRY_RUN'] = DRY_RUN
         config['SAFE_TAGS'] = ', '.join(SAFE_TAGS)
         config['TIMEOUT'] = TIMEOUT
         config['GCE_PROJECT_ID'] = GCE_PROJECT_ID
@@ -98,7 +100,7 @@ class MainHandler(webapp2.RequestHandler):
 
 
 def delete_expired_instances():
-    """logs all expired instances, calls delete API when not PRETEND_MODE"""
+    """logs all expired instances, calls delete API when not DRY_RUN"""
     instances = list_instances()
 
     # filter instances, keep only expired instances
@@ -109,8 +111,8 @@ def delete_expired_instances():
 
     for instance in instances:
         name = instance['name']
-        if PRETEND_MODE:
-            logging.info("PRETEND DELETE: %s", name)
+        if DRY_RUN:
+            logging.info("DRY_RUN, not deleted: %s", name)
         else:
             logging.info("DELETE: %s", name)
             request = compute.instances().delete(project=GCE_PROJECT_ID,
@@ -126,8 +128,8 @@ class DeleteHandler(webapp2.RequestHandler):
 
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler),
     ('/cron/delete', DeleteHandler),
+    ('/', MainHandler),
 ], debug=True)
 
 

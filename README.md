@@ -59,7 +59,7 @@ Give your App Engine application's service account `edit` access to your GCE pro
 Verify
 ------
 
-> As long as PRETEND_MODE is set to `True` (the default) in `main.py`, the application will only log deletes.
+> As long as DRY_RUN is set to `True` (the default) in `main.py`, the application will only log deletes.
 
 Deploy the application to App Engine:
 
@@ -74,8 +74,8 @@ To create instances tagged "production", add the instance using the GCE Console 
 
 You can optionally run the cron task manually and check the logs to verify that the correct instances will be deleted. 
 
-Visit `http://YOUR-APP-ID.appspot.com/cron/delete` to run deletes immediately. Then check the AppEngine logs. You should see "PRETEND DELETE" if any instances are old enough to be deleted.
+Visit `http://YOUR-APP-ID.appspot.com/cron/delete` to run deletes immediately. Then check the AppEngine logs. You should see "DRY_RUN, not deleted" if any instances are old enough to be deleted.
 
-Once everything looks good, edit `main.py` and change `PRETEND_MODE` to `False`.
+Once everything looks good, edit `main.py` and change `DRY_RUN` to `False`.
 
 Happy Computing!

@@ -1,4 +1,4 @@
-application: REPLACE-WITH-YOUR-APP-ID
+application: replace-with-your-app-id
 version: 1
 runtime: python27
 api_version: 1
@@ -15,7 +15,7 @@ handlers:
 
 libraries:
 - name: webapp2
-  version: "2.5.2"
+  version: latest
 
 - name: jinja2
   version: latest
