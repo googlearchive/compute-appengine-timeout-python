@@ -106,7 +106,7 @@ def delete_expired_instances():
     # filter instances, keep only expired instances
     instances = [i for i in instances if i['_timeout_expired']]
 
-    logging.info("delete cron: %s instance%s to delete",
+    logging.info('delete cron: %s instance%s to delete',
                  len(instances), '' if len(instances) == 1 else 's')
 
     for instance in instances:
@@ -151,7 +151,7 @@ def parse_iso8601tz(date_string):
     # parse the timezone offset separately
     delta = datetime.timedelta(minutes=int(date_string[-2:]),
                                hours=int(date_string[-5:-3]))
-    if date_string[-6:-5] == u'-':
+    if date_string[-6] == '-':
         delta = delta * -1
     dt = dt - delta
     return dt
