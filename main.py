@@ -22,22 +22,27 @@ from pprint import pformat
 import jinja2
 import webapp2
 from apiclient.discovery import build
-from google.appengine.api import lib_config
 from google.appengine.api import memcache
 from oauth2client.appengine import AppAssertionCredentials
 
 SAMPLE_NAME = 'Instance timeout helper'
 
-# To make configuration changes, update these values in settings.py
-CONFIG_DEFAULTS = {
+CONFIG= {
+    # In DRY_RUN mode, deletes are only logged. Set this to False after you've
+    # double-checked the status page and you're ready to enable the deletes.
     'DRY_RUN': True,
+
+    # Be careful, this application will delete all instances in the project 
+    # unless they're tagged with one of the SAFE_TAGS below.
     'GCE_PROJECT_ID': 'replace-with-your-compute-engine-project-id',
+
+    # Instance tags which will never be deleted.
     'SAFE_TAGS': ['production', 'safetag'],
+
+    # Instances are deleted after they have been running for TIMEOUT minutes.
     'TIMEOUT': 60 * 8,  # in minutes, defaulting to 8 hours
 }
-registry = lib_config.LibConfigRegistry('settings')
-config = registry.register('main', CONFIG_DEFAULTS)
-config.SAFE_TAGS = [t.lower() for t in config.SAFE_TAGS]
+CONFIG['SAFE_TAGS'] = [t.lower() for t in CONFIG['SAFE_TAGS']]
 
 # Obtain App Engine AppAssertion credentials and authorize HTTP connection.
 # https://developers.google.com/appengine/docs/python/appidentity/overview
@@ -58,7 +63,7 @@ def annotate_instances(instances):
         # set _excluded
         excluded = False
         for tag in instance.get('tags', []):
-            if tag.lower() in config.SAFE_TAGS:
+            if tag.lower() in CONFIG['SAFE_TAGS']:
                 excluded = True
                 break
         instance['_excluded'] = excluded
@@ -69,7 +74,7 @@ def annotate_instances(instances):
         now = datetime.datetime.now()
         delta = now - creation
         instance['_age_hours'] = delta.seconds / 60
-        if delta.seconds > config.TIMEOUT * 60 and not instance['_excluded']:
+        if delta.seconds > CONFIG['TIMEOUT'] * 60 and not instance['_excluded']:
             instance['_timeout_expired'] = True
         else:
             instance['_timeout_expired'] = False
@@ -77,7 +82,7 @@ def annotate_instances(instances):
 
 def list_instances():
     """returns a list of dictionaries containing GCE instance data"""
-    request = compute.instances().list(project=config.GCE_PROJECT_ID)
+    request = compute.instances().list(project=CONFIG['GCE_PROJECT_ID'])
     response = request.execute()
     instances = response.get('items', [])
     annotate_instances(instances)
@@ -90,7 +95,7 @@ class MainHandler(webapp2.RequestHandler):
         instances = list_instances()
 
         data = {}
-        data['config'] = config
+        data['config'] = CONFIG
         data['title'] = SAMPLE_NAME
         data['instances'] = instances
         data['raw_instances'] = pformat(instances)
@@ -111,11 +116,11 @@ def delete_expired_instances():
 
     for instance in instances:
         name = instance['name']
-        if config.DRY_RUN:
+        if CONFIG['DRY_RUN']:
             logging.info("DRY_RUN, not deleted: %s", name)
         else:
             logging.info("DELETE: %s", name)
-            request = compute.instances().delete(project=config.GCE_PROJECT_ID,
+            request = compute.instances().delete(project=CONFIG['GCE_PROJECT_ID'],
                                                  instance=name)
             response = request.execute()
             logging.info(response)
