@@ -68,12 +68,12 @@ def annotate_instances(instances):
                 break
         instance['_excluded'] = excluded
 
-        # set _age_hours and _timeout_expired
+        # set _age_minutes and _timeout_expired
         # _timeout_expired is never True for _excluded inst
         creation = parse_iso8601tz(instance['creationTimestamp'])
         now = datetime.datetime.now()
         delta = now - creation
-        instance['_age_hours'] = delta.seconds / 60
+        instance['_age_minutes'] = delta.seconds / 60
         if delta.seconds > CONFIG['TIMEOUT'] * 60 and not instance['_excluded']:
             instance['_timeout_expired'] = True
         else:
@@ -157,6 +157,7 @@ def parse_iso8601tz(date_string):
     delta = datetime.timedelta(minutes=int(date_string[-2:]),
                                hours=int(date_string[-5:-3]))
     if date_string[-6] == '-':
-        delta = delta * -1
-    dt = dt - delta
+        dt = dt - delta
+    else:
+        dt = dt + delta
     return dt

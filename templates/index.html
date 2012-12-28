@@ -41,7 +41,7 @@
         {% for i in instances %}
         <tr {{'class="expired"' if i._timeout_expired}}>
                 <td>{{i.name}}</td>
-                <td>{{i._age_hours}}</td>
+                <td>{{i._age_minutes}}</td>
                 <td>{{i.creationTimestamp}}</td>
                 <td>{{i.machineType.split('/')[-1]}}</td>
                 <td>{{i._excluded}}</td>
