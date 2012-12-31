@@ -32,11 +32,12 @@ CONFIG= {
     # double-checked the status page and you're ready to enable the deletes.
     'DRY_RUN': True,
 
-    # Be careful, this application will delete all instances in the project 
-    # unless they're tagged with one of the SAFE_TAGS below.
+    # Be careful, this application could delete all instances in this project. 
+    # Your project id can be found on the overview tab of the Google APIs
+    # Console: https://code.google.com/apis/console/
     'GCE_PROJECT_ID': 'replace-with-your-compute-engine-project-id',
 
-    # Instance tags which will never be deleted.
+    # Instances created with these tags will never be deleted.
     'SAFE_TAGS': ['production', 'safetag'],
 
     # Instances are deleted after they have been running for TIMEOUT minutes.
@@ -74,7 +75,7 @@ def annotate_instances(instances):
         now = datetime.datetime.now()
         delta = now - creation
         instance['_age_minutes'] = delta.seconds / 60
-        if delta.seconds > CONFIG['TIMEOUT'] * 60 and not instance['_excluded']:
+        if not instance['_excluded'] and delta.seconds > (CONFIG['TIMEOUT'] * 60):
             instance['_timeout_expired'] = True
         else:
             instance['_timeout_expired'] = False
