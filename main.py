@@ -27,12 +27,12 @@ from oauth2client.appengine import AppAssertionCredentials
 
 SAMPLE_NAME = 'Instance timeout helper'
 
-CONFIG= {
+CONFIG = {
     # In DRY_RUN mode, deletes are only logged. Set this to False after you've
     # double-checked the status page and you're ready to enable the deletes.
     'DRY_RUN': True,
 
-    # Be careful, this application could delete all instances in this project. 
+    # Be careful, this application could delete all instances in this project.
     # Your project id can be found on the overview tab of the Google APIs
     # Console: https://code.google.com/apis/console/
     'GCE_PROJECT_ID': 'replace-with-your-compute-engine-project-id',
@@ -60,25 +60,25 @@ jinja_environment = jinja2.Environment(
 
 def annotate_instances(instances):
     """loops through the instances and adds exclusion, age and timeout"""
-    for instance in instances:
+    for inst in instances:
         # set _excluded
         excluded = False
-        for tag in instance.get('tags', []):
+        for tag in inst.get('tags', []):
             if tag.lower() in CONFIG['SAFE_TAGS']:
                 excluded = True
                 break
-        instance['_excluded'] = excluded
+        inst['_excluded'] = excluded
 
         # set _age_minutes and _timeout_expired
         # _timeout_expired is never True for _excluded inst
-        creation = parse_iso8601tz(instance['creationTimestamp'])
+        creation = parse_iso8601tz(inst['creationTimestamp'])
         now = datetime.datetime.now()
         delta = now - creation
-        instance['_age_minutes'] = delta.seconds / 60
-        if not instance['_excluded'] and delta.seconds > (CONFIG['TIMEOUT'] * 60):
-            instance['_timeout_expired'] = True
+        inst['_age_minutes'] = delta.seconds / 60
+        if not inst['_excluded'] and delta.seconds > (CONFIG['TIMEOUT'] * 60):
+            inst['_timeout_expired'] = True
         else:
-            instance['_timeout_expired'] = False
+            inst['_timeout_expired'] = False
 
 
 def list_instances():
@@ -121,8 +121,8 @@ def delete_expired_instances():
             logging.info("DRY_RUN, not deleted: %s", name)
         else:
             logging.info("DELETE: %s", name)
-            request = compute.instances().delete(project=CONFIG['GCE_PROJECT_ID'],
-                                                 instance=name)
+            request = compute.instances().delete(
+                project=CONFIG['GCE_PROJECT_ID'], instance=name)
             response = request.execute()
             logging.info(response)
 
