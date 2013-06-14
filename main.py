@@ -76,7 +76,8 @@ def annotate_instances(instances):
         delta = now - creation
         age_minutes = (delta.days * 24 * 60) + (delta.seconds / 60)
         inst['_age_minutes'] = age_minutes
-        if not inst['_excluded'] and age_minutes > CONFIG['TIMEOUT']:
+        # >= comparison because seconds are truncated above.
+        if not inst['_excluded'] and age_minutes >= CONFIG['TIMEOUT']:
             inst['_timeout_expired'] = True
         else:
             inst['_timeout_expired'] = False
