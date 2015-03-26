@@ -15,16 +15,22 @@
 # limitations under the License.
 
 import datetime
-import httplib2
 import json
 import logging
+import os
 from pprint import pformat
-
 import jinja2
 import webapp2
-from apiclient import discovery
-from google.appengine.api import memcache
-from oauth2client.appengine import AppAssertionCredentials
+from google.appengine.api import app_identity
+from  google.appengine.ext import vendor
+
+vendor.add('lib')
+
+from googleapiclient import discovery
+from oauth2client.client import GoogleCredentials
+
+
+compute = discovery.build('compute','v1', credentials=GoogleCredentials.get_application_default())
 
 SAMPLE_NAME = 'Instance timeout helper'
 
@@ -36,7 +42,7 @@ CONFIG = {
     # Be careful, this application could delete all instances in this project.
     # Your project id can be found on the overview tab of the Google APIs
     # Console: https://code.google.com/apis/console/
-    'GCE_PROJECT_ID': 'replace-with-your-compute-engine-project-id',
+    'GCE_PROJECT_ID': app_identity.get_application_id(),
 
     # Instances created with these tags will never be deleted.
     'SAFE_TAGS': ['production', 'safetag'],
@@ -48,13 +54,9 @@ CONFIG['SAFE_TAGS'] = [t.lower() for t in CONFIG['SAFE_TAGS']]
 
 # Obtain App Engine AppAssertion credentials and authorize HTTP connection.
 # https://developers.google.com/appengine/docs/python/appidentity/overview
-credentials = AppAssertionCredentials(
-    scope='https://www.googleapis.com/auth/compute')
-HTTP = credentials.authorize(httplib2.Http(memcache))
 
 # Build object for the 'v1' version of the GCE API.
 # https://developers.google.com/compute/docs/reference/v1beta13/
-compute = discovery.build('compute', 'v1', http=HTTP)
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'))
 
